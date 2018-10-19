@@ -1,6 +1,6 @@
 <template>
 <div id="app">
-  <router-view/>
+  <router-view />
 </div>
 </template>
 
@@ -12,6 +12,10 @@
 body {
     margin: 0;
     font-size: 13px;
+}
+
+a {
+    text-decoration: none;
 }
 
 #app {

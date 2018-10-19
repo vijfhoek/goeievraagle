@@ -4,14 +4,32 @@
     <img class="logo__image" src="@/assets/logo.png">
   </div>
   <div class="query">
-    <input class="query__input">
+    <input class="query__input" v-model="query" @keyup.enter="search">
     <div class="query__buttons">
-      <input type="button" value="Goeievraagle zoeken" class="query__submit">
-      <input type="button" value="Ik doe een gok" class="query__submit">
+      <input type="button" value="Goeievraagle zoeken" class="query__submit" @click="search">
+      <input type="button" value="Ik doe een gok" class="query__submit" @click="lucky">
     </div>
   </div>
 </div>
 </template>
+
+<script>
+import Vue from "vue";
+import {Component} from "vue-property-decorator";
+
+@Component
+export default class Index extends Vue {
+  query = "";
+
+  search() {
+    const query = encodeURIComponent(this.query);
+    this.$router.push(`/search?q=${query}`);
+  }
+
+  lucky() {
+  }
+}
+</script>
 
 <style scoped>
 .index {
