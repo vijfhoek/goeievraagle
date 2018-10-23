@@ -3,7 +3,10 @@ from elasticsearch_dsl import Document, Date, Keyword, Text
 
 class Question(Document):
     title = Text(analyzer="snowball")
-    body = Text(analyzer="snowball")
+    body = Text(
+        analyzer="snowball",
+        fielddata=True,
+    )
     category = Keyword()
     date = Date()
 

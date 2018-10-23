@@ -1,5 +1,12 @@
 <template>
 <div class="body">
+  <div class="suggestions">
+    <div v-for="suggestion in json.suggestions" class="suggestion"
+         @click="appendToQuery(suggestion.key)">
+      {{suggestion.key}}
+    </div>
+  </div>
+
   <div class="result-count">
     Ongeveer {{hits}} resultaten ({{responseTime.toFixed(2)}} seconden)
   </div>
@@ -30,6 +37,8 @@
         </a>
       </div>
     </div>
+
+    <!--pre>{{JSON.stringify(json, null, 2)}}</pre-->
   </div>
 </div>
 </template>
@@ -40,17 +49,23 @@ import {Component, Prop, Watch} from "vue-property-decorator";
 
 @Component
 export default class ResultBody extends Vue {
-  @Prop() query;
+  @Prop() value;
 
+  json = null;
   activeCategories = [];
   hits = 0;
   results = [];
   responseTime = 0;
   facets = {};
 
-  @Watch("query")
+  @Watch("value")
   async onQueryChanged(value) {
     await this.search();
+  }
+
+  @Watch("$route")
+  async onRouteChanged() {
+    this.$emit("input", this.$route.query.q);
   }
 
   async toggleCategory(category) {
@@ -67,7 +82,7 @@ export default class ResultBody extends Vue {
   }
 
   async search() {
-    const query = encodeURIComponent(this.query);
+    const query = encodeURIComponent(this.value);
     let queryString = `?q=${query}`;
 
     if (this.activeCategories.length > 0) {
@@ -79,12 +94,16 @@ export default class ResultBody extends Vue {
     const url = `/api/${queryString}`;
 
     let response = await fetch(url);
-    let json = await response.json();
+    this.json = await response.json();
 
-    this.results = json.results;
-    this.hits = json.hits;
-    this.responseTime = json.took;
-    this.facets = json.facets;
+    this.results = this.json.results;
+    this.hits = this.json.hits;
+    this.responseTime = this.json.took;
+    this.facets = this.json.facets;
+  }
+
+  appendToQuery(value) {
+    this.$emit("input", `${this.value} AND ${value}`)
   }
 }
 </script>
@@ -170,5 +189,26 @@ export default class ResultBody extends Vue {
 
 .category__count {
     text-align: right;
+}
+
+.suggestions {
+    display: flex;
+    flex-flow: row wrap;
+    max-width: 1000px;
+    margin: 12px 0;
+
+    height: 70px;
+    overflow-y: hidden;
+}
+
+.suggestion {
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+
+    background-color: #f8f8f8;
+    padding: 7px 16px;
+    margin: 2px;
+
+    cursor: pointer;
 }
 </style>

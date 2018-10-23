@@ -9,7 +9,6 @@ import click
 from .question import Question
 from .question_search import QuestionSearch
 
-
 app = Flask(__name__)
 
 connections.create_connection(hosts=["localhost"])
@@ -39,6 +38,15 @@ def index():
             "category": {
                 "terms": {"field": "category"},
             },
+            "suggestions": {
+                "significant_terms": {
+                    "field": "body",
+                    "mutual_information": {
+                        "include_negatives": True,
+                    },
+                    "size": 40,
+                },
+            }
         },
     })
 
@@ -51,6 +59,9 @@ def index():
         for bucket in response.aggregations.category.buckets
     ]
 
+    suggestions = [{"key": bucket.key, "count": bucket.doc_count}
+                   for bucket in response.aggregations.suggestions.buckets]
+
     date_facets = []
 
     results = []
@@ -59,14 +70,17 @@ def index():
         url = Question.url(hit)
 
         results.append({
-            "id": hit.meta.id, "score": hit.meta.score,
-            "title": hit.title, "body": summary,
-            "category": hit.category, "date": hit.date,
+            "id": hit.meta.id, "score": hit.meta.score, "title": hit.title,
+            "body": summary, "category": hit.category, "date": hit.date,
             "url": url,
         })
 
     return jsonify(
-        facets={"months": date_facets, "categories": category_facets},
+        facets={
+            "months": date_facets,
+            "categories": category_facets,
+        },
+        suggestions=suggestions,
         results=results,
         hits=round_sigfig(response.hits.total, 4),
         took=response.took / 1000,

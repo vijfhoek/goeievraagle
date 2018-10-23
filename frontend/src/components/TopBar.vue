@@ -37,8 +37,10 @@ import {Component, Prop} from "vue-property-decorator";
 export default class TopBar extends Vue {
   @Prop() value = "";
 
-  search(event) {
-    this.$emit("input", event.target.value)
+  search (event) {
+    if (event.target.value.trim().length > 0) {
+      this.$emit("input", event.target.value)
+    }
   }
 }
 </script>

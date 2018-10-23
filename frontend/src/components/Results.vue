@@ -1,7 +1,7 @@
 <template>
 <div>
   <top-bar v-model="query" />
-  <result-body :query="query" />
+  <result-body v-model="query" />
 </div>
 </template>
 
