@@ -1,8 +1,8 @@
 <template>
 <div class="body">
   <div class="chips">
-    <div v-for="chip in chips" class="chip" @click="appendToQuery(chip.key)">
-      {{chip.key}}
+    <div v-for="chip in chips" v-bind:key="chip.key" class="chip" @click="appendToQuery(chip.key)">
+      {{chip.key}} ({{chip.count}})
     </div>
   </div>
 
@@ -12,13 +12,26 @@
 
   <div class="body__inner">
     <div class="body__facets">
-      <div v-for="facet in facets.categories" v-bind:key="facet.category"
-            v-bind:class="{active: activeCategories.includes(facet.category)}"
-            class="category facet" @click="toggleCategory(facet)">
-        <div class="category__facet">{{facet.category}}</div>
+      <div class="body__categories">
+        <div v-for="facet in facets.categories" v-bind:key="facet.category"
+             v-bind:class="{active: activeCategories.includes(facet.category)}"
+             class="category facet" @click="toggleCategory(facet)">
+          <div class="category__facet">{{facet.category}}</div>
 
-        <div v-if="facet.count < 10000" class="category__count">{{facet.count}}</div>
-        <div v-else class="category__count">{{(facet.count / 1000).toFixed()}}K</div>
+          <div v-if="facet.count < 10000" class="category__count">{{facet.count}}</div>
+          <div v-else class="category__count">{{(facet.count / 1000).toFixed()}}K</div>
+        </div>
+      </div>
+
+      <div class="body__dates">
+        <div v-for="{count, key} in facets.dates" v-bind:key="key"
+             v-bind:class="{active: activeYears.includes(key)}"
+             class="facet date" @click="toggleYear(key)">
+          <div class="date__facet">{{key}}</div>
+
+          <div v-if="count < 10000" class="date__count">{{count}}</div>
+          <div v-else class="date__count">{{(count / 1000).toFixed()}}K</div>
+        </div>
       </div>
     </div>
 
@@ -46,7 +59,8 @@
 
         <div v-for="page in pages" class="pagination__page"
              v-if="page > currentPage - 5 && page < currentPage + 5"
-             v-bind:class="{active: page === currentPage}" @click="switchPage(page)">
+             v-bind:class="{active: page === currentPage}" @click="switchPage(page)"
+             v-bind:key="page">
           <img v-if="page === currentPage" src="@/assets/pages_active.png" />
           <img v-else src="@/assets/pages_inactive.png" />
 
@@ -71,12 +85,15 @@ export default class ResultBody extends Vue {
   @Prop() value;
 
   json = null;
-  activeCategories = [];
   hits = 0;
   results = [];
   responseTime = 0;
-  facets = {};
+  facets = {dates: [], categories: []};
   chips = [];
+  dates = {}
+
+  activeCategories = [];
+  activeYears = [];
 
   currentPage = 1;
 
@@ -107,6 +124,17 @@ export default class ResultBody extends Vue {
     await this.search();
   }
 
+  async toggleYear(year) {
+    const index = this.activeYears.indexOf(year);
+    if (index === -1) {
+      this.activeYears.push(year);
+    } else {
+      this.activeYears.splice(index, 1);
+    }
+
+    await this.search();
+  }
+
   async search() {
     const query = encodeURIComponent(this.value);
     let queryString = `?q=${query}&page=${this.currentPage}`;
@@ -114,6 +142,10 @@ export default class ResultBody extends Vue {
     if (this.activeCategories.length > 0) {
       const categories = encodeURIComponent(this.activeCategories.join(","));
       queryString += `&categories=${categories}`;
+    }
+    if (this.activeYears.length > 0) {
+      const years = encodeURIComponent(this.activeYears.join(","));
+      queryString += `&years=${years}`;
     }
 
     this.$router.history.push(`/search${queryString}`);
@@ -127,10 +159,12 @@ export default class ResultBody extends Vue {
     this.hits = this.json.hits;
     this.responseTime = this.json.took;
     this.results = this.json.results;
+
+    console.log({...this.facets});
   }
 
   appendToQuery(value) {
-    this.$emit("input", `${this.value} AND ${value}`)
+    this.$emit("input", `${this.value} AND ${value}`);
   }
 
   async switchPage(page) {
@@ -206,12 +240,14 @@ export default class ResultBody extends Vue {
     font-weight: bold;
 }
 
-.category {
+.category,
+.date {
     display: flex;
     justify-content: space-between;
 }
 
-.category__facet {
+.category__facet,
+.date__facet {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -219,7 +255,8 @@ export default class ResultBody extends Vue {
     padding-right: 8px;
 }
 
-.category__count {
+.category__count,
+.date__count {
     text-align: right;
 }
 
@@ -266,5 +303,10 @@ export default class ResultBody extends Vue {
     text-decoration: underline;
     color: blue;
     cursor: pointer;
+}
+
+.body__categories,
+.body__dates {
+    margin-bottom: 16px;
 }
 </style>

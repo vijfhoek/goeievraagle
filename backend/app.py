@@ -4,6 +4,7 @@ from elasticsearch_dsl.connections import connections
 from elasticsearch.exceptions import NotFoundError
 from tqdm import tqdm
 from beeprint import pp
+from datetime import datetime
 import csv
 import click
 import requests
@@ -23,6 +24,7 @@ def index():
 
     query = request.args.get("q")
     categories = request.args.get("categories", None)
+    years = request.args.get("years", None)
     page = int(request.args.get("page", 1)) - 1
 
     search_dict = {
@@ -31,6 +33,7 @@ def index():
             "bool": {
                 "must": [
                     {"query_string": {"query": query}},
+                    {"term": {"dead": False}},
                 ]
             }
         },
@@ -38,28 +41,55 @@ def index():
             "category": {
                 "terms": {"field": "category"},
             },
+            "date": {
+                "date_histogram": {
+                    "field": "date", "interval": "year",
+                },
+            },
             "chips": {
                 "significant_terms": {
                     "field": "body",
-                    "mutual_information": {
-                        "include_negatives": True,
-                    },
+                    "mutual_information": {"include_negatives": True},
                     "size": 40,
                 },
             }
         },
     }
 
+    if categories is not None or years is not None:
+        search_dict["post_filter"] = {"bool": {"must": []}}
+
     if categories is not None:
         category_list = categories.split(",")
-        search_dict["post_filter"] = {
+        search_dict["post_filter"]["bool"]["must"].append({
             "terms": {"category": category_list},
-        }
+        })
+
+    if years is not None:
+        year_list = years.split(",")
+        search_dict["post_filter"]["bool"]["must"].append({
+            "bool": {
+                "should": [
+                    {
+                        "range": {
+                            "date": {
+                                "gte": f"{year}||/y",
+                                "lte": f"{year}||/y",
+                                "format": "yyyy"
+                            }
+                        }
+                    } for year in year_list if year
+                ]
+            }
+        })
 
     search = Search.from_dict(search_dict)
     response = search.execute()
     pp(response.to_dict())
 
+    date_facets = [{"key": datetime.fromtimestamp(bucket.key / 1000).year,
+                    "count": bucket.doc_count}
+                   for bucket in response.aggregations.date.buckets]
     category_facets = [
         {"category": bucket.key, "count": round_sigfig(bucket.doc_count, 3)}
         for bucket in response.aggregations.category.buckets
@@ -67,8 +97,6 @@ def index():
 
     chips = [{"key": bucket.key, "count": bucket.doc_count}
              for bucket in response.aggregations.chips.buckets]
-
-    date_facets = []
 
     results = []
     for hit in response:
@@ -87,10 +115,7 @@ def index():
         })
 
     return jsonify(
-        facets={
-            "months": date_facets,
-            "categories": category_facets,
-        },
+        facets={"dates": date_facets, "categories": category_facets},
         chips=chips,
         results=results,
         hits=round_sigfig(response.hits.total, 4),
