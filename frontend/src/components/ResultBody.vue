@@ -1,9 +1,8 @@
 <template>
 <div class="body">
-  <div class="suggestions">
-    <div v-for="suggestion in json.suggestions" class="suggestion"
-         @click="appendToQuery(suggestion.key)">
-      {{suggestion.key}}
+  <div class="chips">
+    <div v-for="chip in chips" class="chip" @click="appendToQuery(chip.key)">
+      {{chip.key}}
     </div>
   </div>
 
@@ -26,7 +25,10 @@
     <div class="body__results">
       <div v-for="result in results" v-bind:key="result.id" class="result">
         <a :href="result.url" target="_blank">
-          <div class="result__title">{{result.title}}</div>
+          <div class="result__title">
+            {{result.title}}
+            <span v-if="result.dead">(404)</span>
+          </div>
           <div class="result__link">
             {{result.url}} &bullet; {{result.category}} &bullet; {{result.score.toFixed(3)}}
           </div>
@@ -36,9 +38,26 @@
           </div>
         </a>
       </div>
-    </div>
 
-    <!--pre>{{JSON.stringify(json, null, 2)}}</pre-->
+      <div class="pagination">
+        <div class="pagination__page">
+          <img src="@/assets/pages_start.png" />
+        </div>
+
+        <div v-for="page in pages" class="pagination__page"
+             v-if="page > currentPage - 5 && page < currentPage + 5"
+             v-bind:class="{active: page === currentPage}" @click="switchPage(page)">
+          <img v-if="page === currentPage" src="@/assets/pages_active.png" />
+          <img v-else src="@/assets/pages_inactive.png" />
+
+          {{page}}
+        </div>
+
+        <div class="pagination__page">
+          <img src="@/assets/pages_end.png" />
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 </template>
@@ -57,6 +76,13 @@ export default class ResultBody extends Vue {
   results = [];
   responseTime = 0;
   facets = {};
+  chips = [];
+
+  currentPage = 1;
+
+  get pages() {
+    return Math.ceil(this.hits / 10);
+  }
 
   @Watch("value")
   async onQueryChanged(value) {
@@ -83,7 +109,7 @@ export default class ResultBody extends Vue {
 
   async search() {
     const query = encodeURIComponent(this.value);
-    let queryString = `?q=${query}`;
+    let queryString = `?q=${query}&page=${this.currentPage}`;
 
     if (this.activeCategories.length > 0) {
       const categories = encodeURIComponent(this.activeCategories.join(","));
@@ -96,14 +122,20 @@ export default class ResultBody extends Vue {
     let response = await fetch(url);
     this.json = await response.json();
 
-    this.results = this.json.results;
+    this.chips = this.json.chips;
+    this.facets = this.json.facets;
     this.hits = this.json.hits;
     this.responseTime = this.json.took;
-    this.facets = this.json.facets;
+    this.results = this.json.results;
   }
 
   appendToQuery(value) {
     this.$emit("input", `${this.value} AND ${value}`)
+  }
+
+  async switchPage(page) {
+    this.currentPage = page;
+    await this.search();
   }
 }
 </script>
@@ -191,7 +223,7 @@ export default class ResultBody extends Vue {
     text-align: right;
 }
 
-.suggestions {
+.chips {
     display: flex;
     flex-flow: row wrap;
     max-width: 1000px;
@@ -201,7 +233,7 @@ export default class ResultBody extends Vue {
     overflow-y: hidden;
 }
 
-.suggestion {
+.chip {
     border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 12px;
 
@@ -209,6 +241,30 @@ export default class ResultBody extends Vue {
     padding: 7px 16px;
     margin: 2px;
 
+    cursor: pointer;
+    height: 32px;
+}
+
+.pagination {
+    display: flex;
+    margin: 0 0 16px;
+}
+
+.pagination__page {
+    height: 50px;
+    text-align: center;
+    display: flex;
+    flex-flow: column;
+}
+
+.pagination img {
+    height: 40px;
+    margin: 0 1px;
+}
+
+.pagination__page:not(.active) {
+    text-decoration: underline;
+    color: blue;
     cursor: pointer;
 }
 </style>

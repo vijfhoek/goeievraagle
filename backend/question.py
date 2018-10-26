@@ -1,4 +1,4 @@
-from elasticsearch_dsl import Document, Date, Keyword, Text
+from elasticsearch_dsl import Document, Date, Keyword, Text, Boolean
 
 
 class Question(Document):
@@ -9,6 +9,10 @@ class Question(Document):
     )
     category = Keyword()
     date = Date()
+    answers = Text(analyzer="snowball")
+
+    dead = Boolean()
+    error = Boolean()
 
     class Index:
         name = "goeievraag"

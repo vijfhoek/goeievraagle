@@ -2,3 +2,4 @@ elasticsearch-dsl
 flask
 tqdm
 beeprint
+requests
