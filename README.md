@@ -29,3 +29,11 @@ taught by dr. Maarten Marx.
 - Run the development server: `yarn dev`.
 
 Now, go to http://localhost:8080/ in your browser.
+
+## Disclaimer
+Goeievraagle parodizes the logo, makes use of several styling elements and overall 
+simply rips off the Google search engine. Note that I have no interest in further 
+develop Goeievraagle. 
+
+I will take down this repository without further ado if Alphabet Inc. or Google
+LLC finds Goeievraagle to infringe their legal rights.
