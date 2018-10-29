@@ -3,13 +3,12 @@ from elasticsearch_dsl import Search
 from elasticsearch_dsl.connections import connections
 from elasticsearch.exceptions import NotFoundError
 from tqdm import tqdm
-from beeprint import pp
 from datetime import datetime
 import csv
 import click
 import requests
 
-from .question import Question
+from question import Question
 
 app = Flask(__name__)
 
@@ -33,8 +32,10 @@ def index():
             "bool": {
                 "must": [
                     {"query_string": {"query": query}},
-                    {"term": {"dead": False}},
-                ]
+                ],
+                "must_not": [
+                    {"term": {"dead": True}},
+                ],
             }
         },
         "aggregations": {
@@ -85,7 +86,6 @@ def index():
 
     search = Search.from_dict(search_dict)
     response = search.execute()
-    pp(response.to_dict())
 
     date_facets = [{"key": datetime.fromtimestamp(bucket.key / 1000).year,
                     "count": bucket.doc_count}
