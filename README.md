@@ -23,7 +23,7 @@ taught by dr. Maarten Marx.
 - Run the development server: `flask run`.
 
 ### Frontend
-- Open a new terminnal
+- Open a new terminal
 - `cd` to the `frontend` folder.
 - Install required packages: `yarn install`.
 - Run the development server: `yarn dev`.
