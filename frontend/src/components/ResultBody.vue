@@ -2,7 +2,7 @@
 <div class="body">
   <div class="chips">
     <div v-for="chip in chips" v-bind:key="chip.key" class="chip" @click="appendToQuery(chip.key)">
-      {{chip.key}} ({{chip.count}})
+      {{chip.key}}
     </div>
   </div>
 
@@ -164,7 +164,7 @@ export default class ResultBody extends Vue {
   }
 
   appendToQuery(value) {
-    this.$emit("input", `${this.value} AND ${value}`);
+    this.$emit("input", `${this.value} +${value}`);
   }
 
   async switchPage(page) {

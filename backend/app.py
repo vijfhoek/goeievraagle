@@ -49,7 +49,7 @@ def index():
             "chips": {
                 "significant_terms": {
                     "field": "body",
-                    "mutual_information": {"include_negatives": True},
+                    "mutual_information": {},
                     "size": 40,
                 },
             }
